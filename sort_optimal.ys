@@ -1,0 +1,86 @@
+.pos 0x100
+main:   
+        irmovq  arraysize, %rsi           # %rsi= arraysize
+        irmovq  stackend, %rsp            # Initialize the stack pointer
+        irmovq  array, %rdi               # %rdi= array,  A
+        mrmovq  (%rsi), %rsi              # %rsi=size of the array, len
+        call    quickSort                 # Jumps to quicksort, %rsp = %rsp + -8, (%rsp) = address of halt
+        halt
+        
+.pos 0x200
+quickSort:
+        irmovq  $1, %r9                   # %r9=1
+        irmovq  $8, %r10                   # %r9=8
+        subq    %rsi, %r9                 # r9=r9-rsi, 1-len
+        jge     LN1 #if array             # if (1-len) >= 0 goto LN1
+        rrmovq  %rsi, %rcx                # %rcx = %rsi, len
+        pushq   %r12                      # pushes r12 onto the stack , i pointer
+        irmovq  $1, %r11
+        mulq    %r10, %rcx                 # %rcx = %rcx*%r9, len*8
+        pushq   %rbp                      # pushes rbp onto the stack ,
+        rrmovq  %rsi, %rbp                # %rbp = %rsi, len
+        subq    %r10, %rcx                 # %rcx = %rcx-%r9, (len*8)-8
+        rrmovq  %rdi, %r9                 # %r9=%rdi, array, A
+        rrmovq  %rdi, %rax                # %rax = %rdi, j
+        addq    %rdi, %rcx                # %rcx = %rcx+%rdi, (len*8)-8+array, high = A + len -1
+        pushq   %rbx                      # pushes rbx onto the stack
+        rrmovq  %rdi, %rbx                # %rbx = %rdi, i
+        mrmovq  (%rcx), %r8               # %r8=(%rcx), pivot, *high
+        subq    %rcx, %r9                 # %r9=%r9-%rcx, (*j - pivot)
+        jg     LN3                       # if (*j - pivot) <= 0 goto LN6
+LN6:    mrmovq  (%rax), %rdx              # %rdx = (%rax) , t = *j
+        rrmovq  %r8, %r9                  # %r9 =  %r8, *high, pivot
+        subq    %rdx, %r9                 # %r9 =  %r9 - %rdx , pivot - *j
+        jl      LN4                       # if (pivot - *j < 0) got LN4, the if statement
+        mrmovq  (%rbx), %rsi              # %rsi = (%rbx) = *i
+        rmmovq  %rdx, (%rbx)              # (%rbx) = *i = t
+        jmp     LN5
+
+
+   
+LN5:    addq    %r10, %rbx                 # %rbx = i++
+        rmmovq  %rsi, (%rax)              # (%rax) = *j = *i = %rsi
+LN4:    addq    %r10, %rax                 # %rax = j++
+        rrmovq  %rcx, %r9                 # %r9 = %rcx = high
+        subq    %rax, %r9                 # %r9 = %r9 - %rax, high - j
+        jg     LN6                       # if (high =< j) goto LN3, break out of the while loop
+LN3:    mrmovq  (%rcx), %rax              # %rax = (%rcx), t = *high
+        rrmovq  %rbx, %r12                # %r12 = %rbx, *i
+        mrmovq  (%rbx), %rdx              # %rdx = (%rbx), %rdx = *i
+        subq    %rdi, %r12                # %r12 = %r12 - %rdi , i - A
+        rmmovq  %rax, (%rbx)              # (%rbx) = %rax, *i = t
+        divq    %r10, %r12                 # %r12 = (i - A)/8, len (new len)
+        rmmovq  %rdx, (%rcx)              # (%rcx)  = *high  = *i
+        rrmovq  %r12, %rsi                # %rsi = %r12, len
+        call    quickSort                 # Jumps to quicksort, %rsp = %rsp + -8, (%rsp) = recursive address storing
+        subq    %r12, %rbp                # %rbp = %rbp-%r12, len - new len, len-(i-A)
+        rrmovq  %rbp, %rsi                # %rsi = %rbp = len from previous instruction
+        rrmovq  %rbx, %rdi                # %rdi = %rbx, i
+        subq    %r11, %rsi                 # %rsi = %rsi-%r9, len-(i-A)-1
+        addq    %r10, %rdi                 # %rdi = %r9 + %rdi, i + 1
+        call    quickSort                 # Jumps to quicksort, %rsp = %rsp + -8, (%rsp) = recursive address storing
+        popq    %rbx                      # pops value from the stack
+        popq    %rbp                      # pops value from the stack
+        popq    %r12                      # pops value from the stack
+LN1:    ret
+
+.pos 0x2000
+array:  
+        .quad 0x0000000a
+        .quad 0x00000009
+        .quad 0x00000008
+        .quad 0x00000007
+        .quad 0x00000006
+        .quad 0x00000005
+        .quad 0x00000004
+        .quad 0x00000003
+        .quad 0x00000002
+        .quad 0x00000001
+        
+.pos 0x2500
+arraysize: .quad 10
+           
+.pos 0x3000
+stack:  .quad 0x0,200
+stackend:
+        .quad 0x0

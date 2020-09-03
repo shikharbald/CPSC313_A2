@@ -1,0 +1,89 @@
+.pos 0x100
+main:   
+        irmovq  arraysize, %rsi           # %rsi= arraysize
+        irmovq  stackend, %rsp            # Initialize the stack pointer
+        irmovq  array, %rdi               # %rdi= array,  A
+        mrmovq  (%rsi), %rsi              # %rsi=size of the array, len
+        call    quickSort                 # Jumps to quicksort, %rsp = %rsp + -8, (%rsp) = address of halt
+        halt
+        
+.pos 0x200
+quickSort:
+        irmovq  $1, %r9                   # %r9=1
+        pushq   %r12                      # pushes r12 onto the stack , i pointer
+        pushq   %rbp                      # pushes rbp onto the stack ,
+        pushq   %rbx                      # pushes rbx onto the stack
+        rrmovq  %rsi, %rbp                # %rbp = %rsi, len
+        subq    %rsi, %r9                 # r9=r9-rsi, 1-len
+        jge     LN1 #if array             # if (1-len) >= 0 goto LN1
+        irmovq  $8, %r9                   # %r9=8
+        rrmovq  %rsi, %rcx                # %rcx = %rsi, len
+        mulq    %r9, %rcx                 # %rcx = %rcx*%r9, len*8
+        subq    %r9, %rcx                 # %rcx = %rcx-%r9, (len*8)-8
+        addq    %rdi, %rcx                # %rcx = %rcx+%rdi, (len*8)-8+array, high = A + len -1
+        rrmovq  %rdi, %r9                 # %r9=%rdi, array, A
+        mrmovq  (%rcx), %r8               # %r8=(%rcx), pivot, *high
+        subq    %rcx, %r9                 # %r9=%r9-%rcx, (*j - pivot)
+        jle     LN6                       # if (*j - pivot) <= 0 goto LN6
+        rrmovq  %rdi, %rbx                # %rbx = %rdi, i
+LN3:    mrmovq  (%rcx), %rax              # %rax = (%rcx), t = *high
+        mrmovq  (%rbx), %rdx              # %rdx = (%rbx), %rdx = *i
+        irmovq  $8, %r9                   # %r9 = 8
+        rmmovq  %rdx, (%rcx)              # (%rcx)  = *high  = *i
+        rmmovq  %rax, (%rbx)              # (%rbx) = %rax, *i = t
+        rrmovq  %rbx, %r12                # %r12 = %rbx, *i
+        subq    %rdi, %r12                # %r12 = %r12 - %rdi , i - A
+        divq    %r9, %r12                 # %r12 = (i - A)/8, len (new len)
+        rrmovq  %r12, %rsi                # %rsi = %r12, len
+        call    quickSort                 # Jumps to quicksort, %rsp = %rsp + -8, (%rsp) = recursive address storing
+        irmovq  $1, %r9                   # %r9 = 1
+        subq    %r12, %rbp                # %rbp = %rbp-%r12, len - new len, len-(i-A)
+        rrmovq  %rbp, %rsi                # %rsi = %rbp = len from previous instruction
+        subq    %r9, %rsi                 # %rsi = %rsi-%r9, len-(i-A)-1
+        irmovq  $8, %r9                   # %r9 = 8
+        rrmovq  %rbx, %rdi                # %rdi = %rbx, i
+        addq    %r9, %rdi                 # %rdi = %r9 + %rdi, i + 1
+        call    quickSort                 # Jumps to quicksort, %rsp = %rsp + -8, (%rsp) = recursive address storing
+        jmp     LN1                       # Jumps to LN1
+LN6:    rrmovq  %rdi, %rax                # %rax = %rdi, j
+        rrmovq  %rdi, %rbx                # %rbx = %rdi, i
+LN5:    mrmovq  (%rax), %rdx              # %rdx = (%rax) , t = *j
+        rrmovq  %r8, %r9                  # %r9 =  %r8, *high, pivot
+        subq    %rdx, %r9                 # %r9 =  %r9 - %rdx , pivot - *j
+        irmovq  $8, %r9                   # %r9 = 8
+        jl      LN4                       # if (pivot - *j < 0) got LN4, the if statement
+        mrmovq  (%rbx), %rsi              # %rsi = (%rbx) = *i
+        irmovq  $8, %r9                   # %r9 = 8
+        rmmovq  %rsi, (%rax)              # (%rax) = *j = *i = %rsi
+        rmmovq  %rdx, (%rbx)              # (%rbx) = *i = t
+        addq    %r9, %rbx                 # %rbx = i++
+LN4:    
+        addq    %r9, %rax                 # %rax = j++
+        rrmovq  %rcx, %r9                 # %r9 = %rcx = high
+        subq    %rax, %r9                 # %r9 = %r9 - %rax, high - j
+        jle     LN3                       # if (high =< j) goto LN3, break out of the while loop
+        jmp     LN5                       # esle goto LN5, stay in the loop
+LN1:    popq    %rbx                      # pops value from the stack
+        popq    %rbp                      # pops value from the stack
+        popq    %r12                      # pops value from the stack
+        ret
+        
+.pos 0x2000
+array:  .quad 0x00000007
+        .quad 0x00000003
+        .quad 0x00000004
+        .quad 0x0000000a
+        .quad 0x00000005
+        .quad 0x00000008
+        .quad 0x00000009
+        .quad 0x00000001
+        .quad 0x00000002
+        .quad 0x00000006
+        
+.pos 0x2500
+arraysize: .quad 10
+           
+.pos 0x3000
+stack:  .quad 0x0,200
+stackend:
+        .quad 0x0
